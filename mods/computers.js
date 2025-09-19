@@ -1,7 +1,5 @@
 var modName = "mods/computers.js";
-//var requiredMod = "mods/fengari.js"; // hypothetical dependency if you package Fengari as a mod
 
-if (enabledMods.includes(requiredMod)) {
     elements.luacomputer = {
         name: "Lua Computer",
         color: "#3333BB",
@@ -71,8 +69,3 @@ if (enabledMods.includes(requiredMod)) {
         };
     }
 
-} else {
-    enabledMods.splice(enabledMods.indexOf(modName), 0, requiredMod);
-    alert(`The ${requiredMod} mod is required and has been automatically inserted (reload for this to take effect).`);
-    localStorage.setItem("enabledMods", JSON.stringify(enabledMods));
-};
