@@ -1,5 +1,5 @@
 var modName = "mods/computers.js";
-var requiredMod = "mods/fengari.js"; // hypothetical dependency if you package Fengari as a mod
+//var requiredMod = "mods/fengari.js"; // hypothetical dependency if you package Fengari as a mod
 
 if (enabledMods.includes(requiredMod)) {
     elements.luacomputer = {
