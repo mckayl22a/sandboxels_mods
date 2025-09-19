@@ -1,55 +1,82 @@
 // Lua Computer Mod for Sandboxels
 // Requires Fengari (Lua VM in JS)
-//
-// Save this file into your mods folder and load it with Sandboxels.
-
-// Make sure Fengari is loaded:
+// Make sure to load Fengari in the page first:
 // <script src="https://unpkg.com/fengari-web/dist/fengari-web.js"></script>
 
-if (typeof fengari === "undefined") {
-    console.error("Fengari (Lua VM) is required for this mod.");
+if (typeof elements === "undefined") {
+    console.error("Sandboxels: elements not found. Cannot load Lua Computer mod.");
 }
+else if (typeof fengari === "undefined") {
+    console.error("Sandboxels: fengari (Lua VM) not found. This mod requires it.");
+}
+else {
 
-// Define the Lua computer element
-elements["luacomputer"] = {
-    color: "#4444aa",
-    behavior: behaviors.WALL,
-    category: "machines",
-    state: "solid",
-    conduct: 1,
-    properties: {
-        code: "-- write Lua code here\nprint('Hello from Lua!')",
-        output: "",
-        running: false
-    },
-    tick: function(pixel) {
-        if (pixel.running) return;
+    elements.luacomputer = {
+        color: "#3333BB",
+        behavior: behaviors.WALL,
+        category: "machines",
+        state: "solid",
+        conduct: 1,
+        properties: {
+            code: "-- Lua code here\nprint(\"Hello World\")",
+            output: "",
+            running: false
+        },
+        desc: "A programmable computer that runs Lua code. Right-click to edit.",
+        
+        tick: function(pixel) {
+            if (pixel.running) return;
 
-        try {
-            const lua = fengari.load(pixel.code);
-            const result = lua();
-            pixel.output = result !== undefined ? result.toString() : "(no output)";
-        } catch (e) {
-            pixel.output = "Error: " + e.message;
-        }
+            try {
+                const luaCode = pixel.code || "";
+                
+                const L = fengari.L;
+                const lua = fengari.lua;
+                const lauxlib = fengari.lauxlib;
+                const lualib = fengari.lualib;
+                const to_luastring = fengari.to_luastring;
 
-        pixel.running = true;
-    },
-    desc: "A programmable Lua computer. Right-click to edit code."
-};
+                // create new Lua state
+                const luaState = lauxlib.luaL_newstate();
+                lualib.luaL_openlibs(luaState);
 
-// Right-click menu for editing Lua code
-if (typeof editPixel === "function") {
-    let oldEdit = editPixel;
-    editPixel = function(pixel) {
-        if (pixel.element === "luacomputer") {
-            let newCode = prompt("Enter Lua code:", pixel.code);
-            if (newCode !== null) {
-                pixel.code = newCode;
-                pixel.running = false;
+                // load code
+                const status = lauxlib.luaL_loadstring(luaState, to_luastring(luaCode));
+                if (status !== lua.LUA_OK) {
+                    const msg = lua.lua_tojsstring(luaState, -1);
+                    pixel.output = "Lua syntax error: " + msg;
+                } else {
+                    // run code
+                    const callStatus = lua.lua_pcall(luaState, 0, lua.LUA_MULTRET, 0);
+                    if (callStatus !== lua.LUA_OK) {
+                        const errmsg = lua.lua_tojsstring(luaState, -1);
+                        pixel.output = "Runtime error: " + errmsg;
+                    } else {
+                        const ret = lua.lua_tojsstring(luaState, -1);
+                        pixel.output = ret || "(no return value)";
+                    }
+                }
+            } catch (e) {
+                pixel.output = "JS error: " + e.message;
             }
-        } else {
-            oldEdit(pixel);
+
+            pixel.running = true;
         }
+    };
+
+    // Right-click editing
+    if (typeof editPixel === "function") {
+        const oldEdit = editPixel;
+        editPixel = function(pixel) {
+            if (pixel.element === "luacomputer") {
+                const newCode = prompt("Enter Lua code:", pixel.code);
+                if (newCode !== null) {
+                    pixel.code = newCode;
+                    pixel.running = false;
+                }
+            } else {
+                oldEdit(pixel);
+            }
+        };
     }
 }
