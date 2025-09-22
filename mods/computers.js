@@ -1,17 +1,6 @@
-// computers.js – Lua Computer Mod for Sandboxels
-// Designed to load from a raw GitHub URL
+// computers.js – Lua Computer mod
 
-var modName = "mods/computers.js";
-
-function registerLuaComputer() {
-    if (typeof elements === "undefined") {
-        // wait until Sandboxels has initialized
-        requestAnimationFrame(registerLuaComputer);
-        return;
-    }
-
-    if (elements.luacomputer) return; // already registered
-
+runAfterLoad(function() {
     elements.luacomputer = {
         name: "Lua Computer",
         color: "#3333BB",
@@ -24,7 +13,7 @@ function registerLuaComputer() {
             output: "",
             running: false
         },
-        desc: "A programmable Lua computer. Right-click to edit.",
+        desc: "A programmable computer that runs Lua code. Right-click to edit.",
 
         tick: function(pixel) {
             if (pixel.running) return;
@@ -48,16 +37,13 @@ function registerLuaComputer() {
 
                 const status = lauxlib.luaL_loadstring(luaState, to_luastring(luaCode));
                 if (status !== lua.LUA_OK) {
-                    const msg = lua.lua_tojsstring(luaState, -1);
-                    pixel.output = "Lua syntax error: " + msg;
+                    pixel.output = "Lua syntax error: " + lua.lua_tojsstring(luaState, -1);
                 } else {
                     const callStatus = lua.lua_pcall(luaState, 0, lua.LUA_MULTRET, 0);
                     if (callStatus !== lua.LUA_OK) {
-                        const errmsg = lua.lua_tojsstring(luaState, -1);
-                        pixel.output = "Runtime error: " + errmsg;
+                        pixel.output = "Runtime error: " + lua.lua_tojsstring(luaState, -1);
                     } else {
-                        const ret = lua.lua_tojsstring(luaState, -1);
-                        pixel.output = ret || "(no return value)";
+                        pixel.output = lua.lua_tojsstring(luaState, -1) || "(no return)";
                     }
                 }
             } catch (e) {
@@ -83,7 +69,6 @@ function registerLuaComputer() {
             }
         };
     }
-}
 
-// register element after Sandboxels loads
-registerLuaComputer();
+    console.log("Lua Computer mod loaded!");
+});
